@@ -12,7 +12,9 @@ WiFiMulti wifiMulti;
 #include <ArduinoOTA.h>
 
 
-/// Pin definitions
+/***
+ * 
+ ***/
 #define LED_0         12
 #define LED_1         13
 #define LED_2         14
@@ -20,12 +22,21 @@ WiFiMulti wifiMulti;
 #define TMC_EN        21
 #define TMC_MS1       25
 #define TMC_MS2       26
+#define TMC_DIAG      27
 #define TMC_STEP      22
 #define TMC_DIR       23
+#define TMC_PDN       16
 
 #define CAN_R         4
 #define CAN_D         5
 
+
+/***
+ *    Configuration parameters
+ ***/
+
+#define USE_UART        false
+#define MICROSTEPS      8       // TMC2209 options: 8,16,32,64
 
 
 // Use from 0 to 4. Higher number, more debugging messages and memory usage.
@@ -268,6 +279,65 @@ uint8_t connectMultiWiFi(void)
 
 
 void setup(){
+  pinMode(LED_0, OUTPUT);
+  pinMode(LED_1, OUTPUT);
+  pinMode(LED_2, OUTPUT);
+
+  pinMode(TMC_EN, OUTPUT);
+  pinMode(TMC_MS1, OUTPUT);
+  pinMode(TMC_MS2, OUTPUT);
+  pinMode(TMC_DIAG, INPUT);
+  pinMode(TMC_STEP, OUTPUT);
+  pinMode(TMC_DIR, OUTPUT);
+
+  digitalWrite(TMC_EN, HIGH); // disable motor
+
+  if(USE_UART){
+    
+  }
+  else {
+
+    pinMode(TMC_PDN, OUTPUT);
+    digitalWrite(TMC_PDN, LOW);
+    
+    if(MICROSTEPS == 8){
+      digitalWrite(TMC_MS1, LOW);
+      digitalWrite(TMC_MS2, LOW);
+    }
+    else if(MICROSTEPS == 16){
+      digitalWrite(TMC_MS1, HIGH);
+      digitalWrite(TMC_MS2, HIGH);
+    }
+    else if(MICROSTEPS == 32){
+      digitalWrite(TMC_MS1, HIGH);
+      digitalWrite(TMC_MS2, LOW);
+    }
+    else if(MICROSTEPS == 64){
+      digitalWrite(TMC_MS1, LOW);
+      digitalWrite(TMC_MS2, HIGH);
+    }
+    else if(MICROSTEPS > 64){
+      digitalWrite(TMC_MS1, LOW);
+      digitalWrite(TMC_MS2, HIGH);
+    }
+    else if(MICROSTEPS < 8){
+      digitalWrite(TMC_MS1, LOW);
+      digitalWrite(TMC_MS2, LOW);
+    }
+  }
+  
+
+  digitalWrite(LED_0, HIGH);
+  digitalWrite(LED_1, HIGH);
+  digitalWrite(LED_2, HIGH);
+
+  delay(1000);
+
+  digitalWrite(LED_0, LOW);
+  digitalWrite(LED_1, LOW);
+  digitalWrite(LED_2, LOW);
+  
+  
   Serial.begin(115200);
   while (!Serial);
 
@@ -283,7 +353,7 @@ void setup(){
     Serial.println(F(" failed! AutoFormatting."));
   }
 
-  digitalWrite(12, HIGH); // turn the LED on by making the voltage LOW to tell us we are in configuration mode.
+  digitalWrite(LED_0, HIGH);
 
   unsigned long startedAt = millis();
 
@@ -325,7 +395,7 @@ void setup(){
   ssid.toUpperCase();
 
   Serial.println("Starting configuration portal.");
-  digitalWrite(12, HIGH); // turn the LED on by making the voltage LOW to tell us we are in configuration mode.
+  digitalWrite(LED_0, HIGH);
 
   // Starts an access point
   if (!ESP_wifiManager.startConfigPortal((const char *) ssid.c_str(), password))
@@ -370,7 +440,7 @@ void setup(){
     initialConfig = true;
   }
 
-  digitalWrite(12, LOW); // Turn led off as we are not in configuration mode.
+  digitalWrite(LED_0, LOW);
 
   startedAt = millis();
 
@@ -409,8 +479,6 @@ void setup(){
   else
     Serial.println(ESP_wifiManager.getStatus(WiFi.status()));
 
-  
-  
   ArduinoOTA.setHostname("UniPaste");
 
   ArduinoOTA
@@ -440,10 +508,17 @@ void setup(){
     });
 
   ArduinoOTA.begin();
+
+  digitalWrite(TMC_EN, LOW); // enable motor
+  digitalWrite(TMC_DIR, LOW); // go forwards
 }
 
 void loop(){
   ArduinoOTA.handle();
-
-  check_status();  
+  //check_status();  
+  digitalWrite(TMC_STEP,LOW);
+  delay(2);
+  digitalWrite(TMC_STEP,HIGH);
+  delay(2);
+  
 }
