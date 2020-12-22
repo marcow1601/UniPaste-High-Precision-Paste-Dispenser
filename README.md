@@ -1,4 +1,4 @@
-# UniPaste - CAN-bus enabled paste dispensing steppermotor controller
+# UniPaste - CAN-bus enabled steppermotor controller
  
  ## Hardware capabilites
  
@@ -25,11 +25,11 @@
  
  - [x] ESP_WiFiManager
  - [x] ArduinoOTA
- - [] TMC2209 UART control
- - [] CAN-bus communication
- - [] Basic GCode interpreter
- - [] UniPaste setup/configuration via WiFi
- - [] WiFi/BT-based wireless control
+ - [ ] TMC2209 UART control
+ - [ ] CAN-bus communication
+ - [ ] Basic GCode interpreter
+ - [ ] UniPaste setup/configuration via WiFi
+ - [ ] WiFi/BT-based wireless control
  
  
  ## Library dependencies
