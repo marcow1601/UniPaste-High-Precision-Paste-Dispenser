@@ -1,7 +1,7 @@
 # UniPaste - CAN-bus enabled steppermotor controller
  
  If you would like to support the project, some caffeine is much appreciated :)
- <a href="https://www.buymeacoffee.com/marcosprojects" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 15px !important;width: 54px !important;" ></a>
+ <a href="https://www.buymeacoffee.com/marcosprojects" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="100" ></a>
  
  ## Hardware capabilites
  
