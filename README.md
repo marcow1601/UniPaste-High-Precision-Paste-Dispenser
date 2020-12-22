@@ -1,9 +1,11 @@
 # UniPaste - CAN-bus enabled steppermotor controller
  
+ If you would like to support the project, some caffeine is much appreciated :)
+ <a href="https://www.buymeacoffee.com/marcosprojects" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 108px !important;" ></a>
+ 
  ## Hardware capabilites
  
- <img src="images/UniPaste_front.jpg" width="270">
- <img src="images/UniPaste_back.jpg" width="270">
+ <p float="left"><img src="images/UniPaste_front.jpg" width="270"> <img src="images/UniPaste_back.jpg" width="270"></p>
  
  UniPaste is essentially a one axis universal steppermotor controller, relying on a Trinamic TMC2209 based stepper driver.
  
