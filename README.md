@@ -40,3 +40,5 @@
 * ESP_WiFiManager by [khoih-prog on GitHub](https://github.com/khoih-prog/ESP_WiFiManager)
 * LittleFS by [lorol on GitHub](https://github.com/lorol/LITTLEFS)
 * ArduinoOTA
+* TMCStepper by [teemuatlut on GitHub](https://github.com/teemuatlut/TMCStepper)
+* AccelStepper by [Mike McCauley](https://www.airspayce.com/mikem/arduino/AccelStepper/)

@@ -11,9 +11,12 @@ WiFiMulti wifiMulti;
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 
+#include <TMCStepper.h>
+#include <AccelStepper.h>
+
 
 /***
- * 
+ * Pin definitions
  ***/
 #define LED_0         12
 #define LED_1         13
@@ -27,6 +30,9 @@ WiFiMulti wifiMulti;
 #define TMC_DIR       23
 #define TMC_PDN       16
 
+#define RXD2          16
+#define TXD2          17
+
 #define CAN_R         4
 #define CAN_D         5
 
@@ -37,7 +43,11 @@ WiFiMulti wifiMulti;
 
 #define USE_UART        false
 #define MICROSTEPS      8       // TMC2209 options: 8,16,32,64
+#define DRIVER_ADDRESS  0b00 // TMC2209 Driver address according to MS1 and MS2
+#define R_SENSE         0.11f
 
+TMC2209Stepper driver(&Serial2, R_SENSE, DRIVER_ADDRESS);
+AccelStepper stepper = AccelStepper(stepper.DRIVER, TMC_STEP, TMC_DIR);
 
 // Use from 0 to 4. Higher number, more debugging messages and memory usage.
 #define _WIFIMGR_LOGLEVEL_    3
@@ -291,9 +301,26 @@ void setup(){
   pinMode(TMC_DIR, OUTPUT);
 
   digitalWrite(TMC_EN, HIGH); // disable motor
-
+  
   if(USE_UART){
+    // Driver adress 0b00
+    digitalWrite(TMC_MS1, LOW);
+    digitalWrite(TMC_MS2, LOW);
     
+    Serial2.begin(115200);
+    
+    driver.begin();
+    driver.toff(5);                 // Enables driver in software
+    driver.rms_current(250);        // Set motor RMS current
+    driver.microsteps(MICROSTEPS);  // Set microsteps
+    driver.pwm_autoscale(true);     // Needed for stealthChop
+
+    stepper.setMaxSpeed(20000); // 100mm/s @ 80 steps/mm
+    stepper.setSpeed(10000);
+    stepper.setAcceleration(800000); // 2000mm/s^2
+    stepper.setEnablePin(TMC_EN);
+    stepper.setPinsInverted(false, false, true);
+    stepper.enableOutputs();
   }
   else {
 
@@ -382,7 +409,7 @@ void setup(){
     LOGERROR3(F("* Add SSID = "), Router_SSID, F(", PW = "), Router_Pass);
     wifiMulti.addAP(Router_SSID.c_str(), Router_Pass.c_str());
     
-    ESP_wifiManager.setConfigPortalTimeout(60); //If no access point name has been previously entered disable timeout.
+    ESP_wifiManager.setConfigPortalTimeout(30); //If no access point name has been previously entered disable timeout.
     Serial.println("Got stored Credentials. Timeout 60s for Config Portal");
   }
   else
@@ -510,15 +537,25 @@ void setup(){
   ArduinoOTA.begin();
 
   digitalWrite(TMC_EN, LOW); // enable motor
-  digitalWrite(TMC_DIR, LOW); // go forwards
+  //digitalWrite(TMC_DIR, LOW); // go forwards
+
+  stepper.move(100000);
 }
 
 void loop(){
   ArduinoOTA.handle();
   //check_status();  
-  digitalWrite(TMC_STEP,LOW);
+ /* digitalWrite(TMC_STEP,LOW);
   delay(2);
   digitalWrite(TMC_STEP,HIGH);
-  delay(2);
+  delay(2);*/
+
+   /*if (stepper.distanceToGo() == 0) {
+        stepper.disableOutputs();
+        delay(100);
+        stepper.move(10000); // Move 100mm
+        stepper.enableOutputs();
+    }*/
+    stepper.runSpeed();
   
 }
