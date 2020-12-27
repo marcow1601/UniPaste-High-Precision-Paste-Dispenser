@@ -14,6 +14,15 @@ WiFiMulti wifiMulti;
 #include <TMCStepper.h>
 #include <AccelStepper.h>
 
+#include <Arduino.h>
+#include <ESP32CAN.h>
+#include <CAN_config.h>
+
+CAN_device_t CAN_cfg;               // CAN Config
+unsigned long previousMillis = 0;   // will store last time a CAN Message was send
+const int interval = 1000;          // interval at which send CAN Messages (milliseconds)
+const int rx_queue_size = 10;       // Receive Queue size
+
 
 /***
  * Pin definitions
@@ -506,6 +515,21 @@ void setup(){
   else
     Serial.println(ESP_wifiManager.getStatus(WiFi.status()));
 
+  /*******************************************
+   **************  CAN Setup  ****************
+   *******************************************/
+   
+  CAN_cfg.speed = CAN_SPEED_125KBPS;
+  CAN_cfg.tx_pin_id = GPIO_NUM_5;
+  CAN_cfg.rx_pin_id = GPIO_NUM_4;
+  CAN_cfg.rx_queue = xQueueCreate(rx_queue_size, sizeof(CAN_frame_t));
+  // Init CAN Module
+  ESP32Can.CANInit();
+
+  /*******************************************
+   **************  OTA Setup  ****************
+   *******************************************/
+   
   ArduinoOTA.setHostname("UniPaste");
 
   ArduinoOTA
@@ -536,14 +560,35 @@ void setup(){
 
   ArduinoOTA.begin();
 
-  digitalWrite(TMC_EN, LOW); // enable motor
+  //digitalWrite(TMC_EN, LOW); // enable motor
   //digitalWrite(TMC_DIR, LOW); // go forwards
 
-  stepper.move(100000);
+  //stepper.move(100000);
 }
 
 void loop(){
   ArduinoOTA.handle();
+
+  unsigned long currentMillis = millis();
+  
+   // Send CAN Message
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    CAN_frame_t tx_frame;
+    tx_frame.FIR.B.FF = CAN_frame_std;
+    tx_frame.MsgID = 0x001;
+    tx_frame.FIR.B.DLC = 8;
+    tx_frame.data.u8[0] = 0x00;
+    tx_frame.data.u8[1] = 0x01;
+    tx_frame.data.u8[2] = 0x02;
+    tx_frame.data.u8[3] = 0x03;
+    tx_frame.data.u8[4] = 0x04;
+    tx_frame.data.u8[5] = 0x05;
+    tx_frame.data.u8[6] = 0x06;
+    tx_frame.data.u8[7] = 0x07;
+    ESP32Can.CANWriteFrame(&tx_frame);
+  }
+  
   //check_status();  
  /* digitalWrite(TMC_STEP,LOW);
   delay(2);
@@ -556,6 +601,6 @@ void loop(){
         stepper.move(10000); // Move 100mm
         stepper.enableOutputs();
     }*/
-    stepper.runSpeed();
+    //stepper.runSpeed();
   
 }

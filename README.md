@@ -28,8 +28,9 @@
  
  - [x] ESP_WiFiManager
  - [x] ArduinoOTA
- - [ ] TMC2209 UART control
- - [ ] CAN-bus communication
+ - [x] TMC2209 Standalone mode with UART configuration
+ - [ ] TMC2209 Full UART control
+ - [x] ESP32 TWAI based CAN-bus communication
  - [ ] Basic GCode interpreter
  - [ ] UniPaste setup/configuration via WiFi
  - [ ] WiFi/BT-based wireless control
@@ -42,3 +43,4 @@
 * ArduinoOTA
 * TMCStepper by [teemuatlut on GitHub](https://github.com/teemuatlut/TMCStepper)
 * AccelStepper by [Mike McCauley](https://www.airspayce.com/mikem/arduino/AccelStepper/)
+* ESP32-Arduino-CAN by [miwagner on GitHub](https://github.com/miwagner/ESP32-Arduino-CAN)
