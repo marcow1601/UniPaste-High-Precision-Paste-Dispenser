@@ -36,6 +36,24 @@
  - [ ] WiFi/BT-based wireless control
  
  
+ ## CAN communication
+ 
+CAN communication is handled by the ESP32-internal SJA1000 CAN controller, which is CAN2.0B compatible with a fixed baudrate of 500kbit/s. The Node-ID of your UniPaste controller is set using the provided 5-bits of solder jumpers.
+
+At this point in time, the following CAN messages containing a supported GCode command are being handled:
+
+| Command | Description |
+| ------- | ----------- |
+| G0 A\<pos\> F\<speed\> | Add a linear move to the queue to be performed after all previous moves are completed. |
+| G90 | Absolute Positioning - In absolute mode all coordinates given in G-code are interpreted as positions in the logical coordinate space. |
+| G91 | Relative Positioning - In this mode all coordinates are interpreted as relative to the last position. |
+| G92 A\<pos\> | Set the current position to the value specified. |
+| M92 A\<steps\> | Set the number of full steps/mm for your setup |
+| M114 | Get the current position |
+| M503 | Report settings |
+| M906 A\<mA\> | Set TMC motor current in mA |
+ 
+ 
  ## Library dependencies
  
 * ESP_WiFiManager by [khoih-prog on GitHub](https://github.com/khoih-prog/ESP_WiFiManager)
