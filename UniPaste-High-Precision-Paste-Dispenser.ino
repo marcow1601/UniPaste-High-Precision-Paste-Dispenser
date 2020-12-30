@@ -14,14 +14,22 @@ WiFiMulti wifiMulti;
 #include <TMCStepper.h>
 #include <AccelStepper.h>
 
-#include <Arduino.h>
-#include <ESP32CAN.h>
-#include <CAN_config.h>
+//#include <Arduino.h>
+//#include <ESP32CAN.h>
+//#include <CAN_config.h>
 
-CAN_device_t CAN_cfg;               // CAN Config
+#include <CAN.h>
+
+String multipacketCAN;
+bool multipacketCANisComplete = false;
 unsigned long previousMillis = 0;   // will store last time a CAN Message was send
-const int interval = 1000;          // interval at which send CAN Messages (milliseconds)
-const int rx_queue_size = 10;       // Receive Queue size
+
+ 
+
+//CAN_device_t CAN_cfg;               // CAN Config
+//unsigned long previousMillis = 0;   // will store last time a CAN Message was send
+//const int interval = 1000;          // interval at which send CAN Messages (milliseconds)
+//const int rx_queue_size = 10;       // Receive Queue size
 
 
 /***
@@ -295,6 +303,96 @@ uint8_t connectMultiWiFi(void)
   return status;
 }
 
+void receiveMultipacketCAN(int packetSize){
+  byte multipacketSize, packetIndex;
+  
+  if(packetSize > 2){
+    if(CAN.available()) multipacketSize = CAN.read();
+    if(CAN.available()) packetIndex = CAN.read();
+
+    Serial.print(packetIndex);
+    Serial.print(" / ");
+    Serial.println(multipacketSize);
+
+    if(packetIndex == 1) multipacketCAN = "";
+    
+    if(packetIndex == multipacketSize) multipacketCANisComplete = true;
+    else multipacketCANisComplete = false;
+    
+    while(CAN.available()) multipacketCAN += (char)CAN.read();
+    
+  }
+
+  else {
+    while(CAN.available()) CAN.read();
+    Serial.println("Invalid segment of Multipacket.");
+  }
+}
+
+void sendMultipacketCAN(String message) {
+  Serial.print("Sending Multipacket: ");
+  Serial.println(message);
+
+  Serial.print("No. of packets: ");
+  uint8_t noPackets = (message.length()%6 > 0) ? (int)(message.length()/6.0)+1 : (int)(message.length()/6.0);
+  Serial.println(noPackets);
+
+  for(uint8_t packet = 1; packet <= noPackets; packet++){
+    CAN.beginPacket(0x1);
+    CAN.write(noPackets); // How many packets for entire multipacket
+    CAN.write(packet); // This packet index
+
+    Serial.print(packet);
+    Serial.print(" / ");
+    Serial.println(noPackets);
+    
+    if(packet < noPackets || message.length()%6 == 0){  // Not the last packet in multipacket
+      for(uint8_t i=0; i<6; i++){
+        CAN.write(message.charAt(6*(packet-1)+i));
+        Serial.print(message.charAt(6*(packet-1)+i));
+      }
+    }
+    else{  // Last packet in multipacket might be shorter than 6 bytes
+      for(uint8_t i=0; i<message.length()%6; i++){
+        CAN.write(message.charAt(6*(packet-1)+i));
+        Serial.print(message.charAt(6*(packet-1)+i));
+      }
+    }
+    CAN.endPacket();
+    Serial.println();
+  }
+}
+
+void onReceive(int packetSize) {
+  // received a packet
+  Serial.print("Received ");
+
+  if (CAN.packetExtended()) {
+    Serial.print("extended ");
+  }
+
+  if (CAN.packetRtr()) {
+    // Remote transmission request, packet contains no data
+    Serial.print("RTR ");
+  }
+
+  Serial.print("packet with id 0x");
+  Serial.print(CAN.packetId(), HEX);
+
+  if (CAN.packetRtr()) {
+    Serial.print(" and requested length ");
+    Serial.println(CAN.packetDlc());
+  } else {
+    Serial.print(" and length ");
+    Serial.println(packetSize);
+
+    receiveMultipacketCAN(packetSize);
+
+    if(multipacketCANisComplete) Serial.println(multipacketCAN);
+  }
+
+  Serial.println();
+}
 
 
 void setup(){
@@ -518,13 +616,20 @@ void setup(){
   /*******************************************
    **************  CAN Setup  ****************
    *******************************************/
+  CAN.setPins(4, 5);
+  if(!CAN.begin(125E3)){
+    Serial.println("Starting CAN failed");
+    while(1);
+  }
+
+  CAN.onReceive(onReceive);
    
-  CAN_cfg.speed = CAN_SPEED_125KBPS;
-  CAN_cfg.tx_pin_id = GPIO_NUM_5;
-  CAN_cfg.rx_pin_id = GPIO_NUM_4;
-  CAN_cfg.rx_queue = xQueueCreate(rx_queue_size, sizeof(CAN_frame_t));
+  //CAN_cfg.speed = CAN_SPEED_125KBPS;
+  //CAN_cfg.tx_pin_id = GPIO_NUM_5;
+  //CAN_cfg.rx_pin_id = GPIO_NUM_4;
+  //CAN_cfg.rx_queue = xQueueCreate(rx_queue_size, sizeof(CAN_frame_t));
   // Init CAN Module
-  ESP32Can.CANInit();
+  //ESP32Can.CANInit();
 
   /*******************************************
    **************  OTA Setup  ****************
@@ -570,23 +675,36 @@ void loop(){
   ArduinoOTA.handle();
 
   unsigned long currentMillis = millis();
+
+  
   
    // Send CAN Message
-  if (currentMillis - previousMillis >= interval) {
+  if (currentMillis - previousMillis >= 2000) {
+    String CANmessage = "Hallo wie geht es?";
+
+    sendMultipacketCAN(CANmessage);
+    
     previousMillis = currentMillis;
-    CAN_frame_t tx_frame;
+    /*CAN_frame_t tx_frame;
     tx_frame.FIR.B.FF = CAN_frame_std;
     tx_frame.MsgID = 0x001;
-    tx_frame.FIR.B.DLC = 8;
-    tx_frame.data.u8[0] = 0x00;
-    tx_frame.data.u8[1] = 0x01;
-    tx_frame.data.u8[2] = 0x02;
-    tx_frame.data.u8[3] = 0x03;
-    tx_frame.data.u8[4] = 0x04;
-    tx_frame.data.u8[5] = 0x05;
-    tx_frame.data.u8[6] = 0x06;
-    tx_frame.data.u8[7] = 0x07;
-    ESP32Can.CANWriteFrame(&tx_frame);
+    String message = "G0 A100 F20.0";
+    
+    uint8_t msg_length = message.length();
+    tx_frame.FIR.B.DLC = msg_length;
+    
+    for(uint8_t i=0; i<msg_length ; i++){
+      tx_frame.data.u8[i] = message.charAt(i);
+    }
+    tx_frame.data.u8[0] = 'H';
+    tx_frame.data.u8[1] = 'e';
+    tx_frame.data.u8[2] = 'l';
+    tx_frame.data.u8[3] = 'l';
+    tx_frame.data.u8[4] = 'o';
+    tx_frame.data.u8[5] = 'C';
+    tx_frame.data.u8[6] = 'A';
+    tx_frame.data.u8[7] = 'N';
+    ESP32Can.CANWriteFrame(&tx_frame);*/
   }
   
   //check_status();  
