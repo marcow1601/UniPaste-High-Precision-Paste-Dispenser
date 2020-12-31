@@ -61,4 +61,4 @@ At this point in time, the following CAN messages containing a supported GCode c
 * ArduinoOTA
 * TMCStepper by [teemuatlut on GitHub](https://github.com/teemuatlut/TMCStepper)
 * AccelStepper by [Mike McCauley](https://www.airspayce.com/mikem/arduino/AccelStepper/)
-* ESP32-Arduino-CAN by [miwagner on GitHub](https://github.com/miwagner/ESP32-Arduino-CAN)
+* Arduino CAN by [sandeepmistry on GitHub](https://github.com/sandeepmistry/arduino-CAN)
