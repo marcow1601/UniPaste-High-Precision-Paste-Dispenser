@@ -66,6 +66,18 @@ unsigned long previousMillis = 0;   // will store last time a CAN Message was se
 TMC2209Stepper driver(&Serial2, R_SENSE, DRIVER_ADDRESS);
 AccelStepper stepper = AccelStepper(stepper.DRIVER, TMC_STEP, TMC_DIR);
 
+/***
+ *    Motion system variables
+ ***/ 
+#define AXIS          'A'
+
+float stepsPerMM = 80;        // This is full steps per mm. Real steps/mm is MICROSTEPS*stepsPerMM
+
+String positioning = "absolute";
+float position = 0;
+float targetPosition = 0;
+
+
 // Use from 0 to 4. Higher number, more debugging messages and memory usage.
 #define _WIFIMGR_LOGLEVEL_    3
 
@@ -392,6 +404,106 @@ void onReceive(int packetSize) {
   }
 
   Serial.println();
+}
+
+void processGCode(String gcode){
+  String command = "";
+  String arg1 = "";
+  String arg2 = "";
+  
+  if(gcode.length() > 0 && gcode.indexOf(' ') == -1){
+    command = gcode;
+  }
+  else if(gcode.length() > 0 && gcode.indexOf(' ') > -1){
+    command = gcode.substring(0,gcode.indexOf(' '));
+    String arguments = gcode.substring(gcode.indexOf(' ')+1);
+
+    if(arguments.indexOf(' ') > -1){
+      arg1 = arguments.substring(0,arguments.indexOf(' '));
+      arg2 = arguments.substring(arguments.indexOf(' ')+1);
+    }
+    else arg1 = arguments;
+  }
+  else{
+    Serial.println("Empty GCode received");
+    return;
+  }
+
+  // G0 A<pos> F<speed>
+  if(command.equalsIgnoreCase("G0")){
+    if(arg1!=""){
+      if(arg1.charAt(0) == AXIS){
+        float pos = arg1.substring(1).toFloat();
+        if(positioning == "absolute") targetPosition = pos;
+        else targetPosition += pos;
+      }
+      else Serial.println("G0 command for different axis received");
+      if(arg2!=""){
+        if(arg2.charAt(0) == 'F'){
+          float feedrate = arg2.substring(1).toFloat();
+  
+          /*####### TODO: Set feedrate ##########*/
+        }
+      }
+    }
+    else Serial.println("G0 command without arguments received");
+  }
+  // G90: Absolute Positioning
+  else if(command.equalsIgnoreCase("G90")){
+    positioning = "absolute";
+  }
+  // G91: Relative Positioning
+  else if(command.equalsIgnoreCase("G91")){
+    positioning = "relative";
+  }
+  // G92 A<pos>: Set the current position to the value specified
+  else if(command.equalsIgnoreCase("G92")){
+    if(arg1!=""){
+      if(arg1.charAt(0) == AXIS){
+       position = arg1.substring(1).toFloat(); 
+      }
+      else Serial.println("G92 command for different axis received");
+    }
+    else Serial.println("G92 command without arguments received");
+  }
+  // M92 A<steps>: Set the number of full steps/mm for your setup
+  else if(command.equalsIgnoreCase("M92")){
+    if(arg1!=""){
+      if(arg1.charAt(0) == AXIS){
+        stepsPerMM = arg1.substring(1).toFloat();
+      }
+      else Serial.println("M92 command for different axis received");
+    }
+    else Serial.println("M92 command without arguments received");
+  }
+  // M114: Get the current position
+  else if(command.equalsIgnoreCase("M114")){
+    sendMultipacketCAN(String(position));
+  }
+  // M503: Report settings
+  else if(command.equalsIgnoreCase("M503")){
+    reportSettings();
+  }
+  // M906 A<mA>: Set TMC motor current in mA
+  else if(command.equalsIgnoreCase("M906")){
+    if(arg1!=""){
+      if(arg1.charAt(0) == AXIS){
+        float motorCurrent = arg1.substring(1).toFloat();
+        driver.rms_current(motorCurrent);        // Set motor RMS current
+      }
+      else Serial.println("M906 command for different axis received");
+    }
+    else Serial.println("M906 command without arguments received");
+  }
+  else {
+    Serial.println("Unsupported GCode command received");
+    return;
+  }
+  
+}
+
+void reportSettings(){
+  
 }
 
 

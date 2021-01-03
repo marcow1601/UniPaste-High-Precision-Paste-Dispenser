@@ -31,7 +31,7 @@
  - [x] TMC2209 Standalone mode with UART configuration
  - [ ] TMC2209 Full UART control
  - [x] ESP32 TWAI based CAN-bus communication
- - [ ] Basic GCode interpreter
+ - [x] Basic GCode interpreter
  - [ ] UniPaste setup/configuration via WiFi
  - [ ] WiFi/BT-based wireless control
  
